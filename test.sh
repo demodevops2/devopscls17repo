@@ -1,3 +1,3 @@
 #!/bin/bash
 
-touch file{1..4}
+touch file{5..8}
