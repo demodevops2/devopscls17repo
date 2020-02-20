@@ -1,3 +1,23 @@
 #sudo apt-add-repository ppa:ansible/ansible
 #sudo apt-get update
 #sudo apt-get install ansible.
+
+
+#vim /etc/ansible/hosts
+
+[webserver]
+172.31.19.29   ansible_ssh_user=ubuntu   ansible_ssh_private_key_file=/root/ganeshkey.pem 
+172.31.17.199   ansible_ssh_user=ubuntu   ansible_ssh_private_key_file=/root/ganeshkey.pem
+
+
+######## Install pkg's in ubuntu os ######
+packages.yml                          
+                                     
+---
+- hosts: webgroup                                            
+  become: yes
+  tasks:
+  - name: Install apache package in ubuntu os
+    apt:
+    name: apache2
+    state: present
