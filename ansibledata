@@ -21,3 +21,49 @@ packages.yml
     apt:
     name: apache2
     state: present
+    
+    
+  ---
+- hosts: webserver
+  become: true
+  tasks:
+    - name: Installs tomcat8 webserver
+      apt: name=tomcat8 state=present update_cache=true
+      notify:
+        - starttomcat
+
+  handlers:
+    - name: starttomcat
+      service: name=tomcat8 state=started
+      
+      
+   #ansible-vault create topsecret.yml --> create encrypted file using vault.
+#ansible-vault edit topsecret.yml --> To edit the vault file.
+#ansible-vault decrypt topsecret.yml --> To decrypt a file (back to plan text).
+#ansible-vault encrypt topsecret.yml --> To encrypt a file.
+#ansible-playbook topsecret.yml --ask-vault-pass --> To run a encrypt playbook. 
+
+
+#ansible all -a "yum -y install httpd" --> with out using module 'yum' install 'httpd' package.
+#ansible all -m yum -a "name=httpd state=present" --> Using module yum install httpd package.
+
+File Transfer:-
+Copy module:
+#ansible devopsgroup -m copy -a "src=/root/test.sh dest=/tmp/"
+
+File module:
+#ansible all -m file -a "dest=/tmp/test.sh mode=777" -> Using the file module you can also modify the file properties on host.
+#ansible all -m file -a "dest=/tmp/ganeshdir  state=directory mode=755" -> You can also create directories and set permissions.
+#ansible all -m file -a "dest=/tmp/ganeshdir state=absent" -> You can also delete the directories.
+
+Managing Packages:
+#ansible all -m apt -a "name=apache2 state=present" --become --> Packages can also be maintained using  ansible there are yum and apt modules for that.
+#ansible all -m apt -a "name=apache2* state=absent" --become --> Ensure a package is not installed.
+
+Managing Services:
+#ansible webservers -m service -a "name=httpd state=started" --> Ensure a service is started on all webservers.
+#ansible webservers -m service -a "name=httpd state=restarted" --> Alternatively, restart a service on all webservers.
+# ansible webservers -m service -a "name=httpd state=stopped" --> Ensure a service is stopped.
+
+
+
