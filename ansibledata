@@ -66,4 +66,13 @@ Managing Services:
 # ansible webservers -m service -a "name=httpd state=stopped" --> Ensure a service is stopped.
 
 
+####### Copy ssh key into multiple target locations by using bash script ###################
+
+cat copysshkey.sh
+#!/bin/bash
+for ip in `cat /root/list_of_servers`; do
+    ssh-copy-id -i ~/.ssh/id_rsa.pub $ip
+done
+
+
 
