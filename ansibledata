@@ -68,10 +68,14 @@ Managing Services:
 
 ####### Copy ssh key into multiple target locations by using bash script ###################
 
+Step: Before run below script follow below steps:
+#eval `ssh-agent -s`
+https://www.techrepublic.com/article/how-to-ssh-into-an-aws-instance/
+
 cat copysshkey.sh
 #!/bin/bash
 for ip in `cat /root/list_of_servers`; do
-    ssh-copy-id -i ~/.ssh/id_rsa.pub $ip
+    ssh-copy-id -i ~/.ssh/id_rsa.pub ubntu@$ip
 done
 
 #ansible-galaxy init apache --offline -> use for to creating a structure.
