@@ -94,4 +94,53 @@ tasks:    actions are stored , core logic or code .Installing packages,coping fi
 Templates : will be stored in the dynamic files -> similar to files except that templates support dynamic files.
 vars:     both vars and defaults stores variables.variables stored under "vars" has got high priority.
 
+##############   project sample #########################
+
+#cd tasks -> vim main.yml file
+- include: install.yml
+- include: configure.yml
+- include: service.yml
+
+incide tasks: vim install.yml
+---
+- name: install apache
+  apt: pkg=apache2 state=present
+	
+incide tasks: vim configure.yml
+---
+- name: apache2.conf
+  copy: src=apache2.conf dest=/etc/apache2/apache2.conf
+  notify:
+   - restart apache service
+- name: send index.html
+  copy: src=index.html dest=/var/www/html/index.html
+
+incide tasks: vim service.yml
+---
+- name: start apache service
+  service: name=apache2 state=started
+
+includede files: #cp /etc/apache2/apache2.conf .
+              #vim apache2.conf ->modified ansible file
+
+              #vim index.html --> edit sample file
+			  <html>
+			  <h1> Learning ansible roles </h1>
+			  </html>
+
+incide handlers: #vim main.yml
+---
+- name: restart apache service
+  service: name=apache2 state=restarted
+
+incide /etc/ansible: create site.yml file
+#vim site.yml
+---
+- hosts: webserver
+  sudo: yes
+  roles: 
+    - apache
+	
+To check syntax : #ansible-playbook site.yml --syntax-check
+
 
