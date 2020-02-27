@@ -69,7 +69,7 @@ Managing Services:
 ####### Copy ssh key into multiple target locations by using bash script ###################
 
 Step: Before run below script follow below steps:
-#eval `ssh-agent -s`
+#eval `ssh-agent -s` or eval "$(ssh-agent)"
 https://www.techrepublic.com/article/how-to-ssh-into-an-aws-instance/
 
 cat copysshkey.sh
