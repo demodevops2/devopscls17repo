@@ -1,0 +1,322 @@
+#############################################   Kubernetes  #######################################
+
+-> What do you mean by Container Orachestration:
+   In case of any failure occurs on the docker container or nodes it should able to replace the contanier or node and also if you get any new request to deploy a container it should able to take care of that one.
+
+-> Deployment : In case if you get any new request to deploy a container it should able to manage.
+-> Scaling:     In case your application is consumed by more uses it should able to create new contaniers to handle that load.
+-> Monitoring:  In case of any failure occurs on your docker container it is going to replace with new contanier.
+   the above activities done by the Kubernetes.
+
+-> Kubernetes is a cluster and orchestration engine for docker containers.
+-> In other words Kubernetes is  an open source software or tool which is used to orchestrate and manage docker containers in cluster environment.
+-> Kubernetes is also known as k8s and it was developed by Google and donated to “Cloud Native Computing foundation”.
+-> In Kubernetes setup we have one master node and multiple nodes.
+-> Cluster nodes is known as worker node or Minion.
+-> From the master node we manage the cluster and its nodes using ‘kubeadm‘ and ‘kubectl‘  command.
+
+Kubernetes can be installed and deployed using following methods:
+
+  Minikube ( It is a single node kubernetes cluster)
+  Kops ( Multi node kubernetes setup into AWS )
+  Kubeadm ( Multi Node Cluster in our own premises)
+
+Kubernetes components: 
+  Node: It is a physical or virtual server which can hold containers.
+  Cluster: Cluster doesn't work on it's own that is where we need a master node to manage our Cluster.
+           In Kubernetes we've at least one master node to manage our entire cluster.
+
+On the Master Node following components will be installed:
+
+  kube-apiserver: Use for front end for Kubernetes the users,management devices,CLI,interact with api-server to talk with kubernetes cluster.
+                  It provides kubernetes API using Jason / Yaml over http, states of API objects are stored in etcd.
+  etcd: distributed reliable key-value store, kubernetes stores all the data in etcd to manage the cluster.(masters and nodes info)
+        It's available all the nodes in the cluster.  
+        It is a Key value pair data base. It stores configuration data of cluster and cluster state.
+  kube-scheduler: distribute the work to the multiple containers which are there in across the cluster.
+                  It is a program on master node which performs the scheduling tasks like launching containers in worker nodes based on resource availability.
+  kube-controller-manager: is responsible to identify if there is any failures in the node or containers so that it can able to replace with the new container or node.
+                           Main Job of Controller manager is to monitor replication controllers and create pods to maintain desired state.
+  Kubectl utility: It is a command line utility which connects to API Server on port 6443. It is used by administrators to create pods, services etc.
+                   interact with our cluster to manage.
+  cloud-controller-manager: it is useful if you are hosting kubernetes in the cloud. so it can able to talk underlaying cloud provider to manage your nodes. 
+
+On Worker Nodes following components will be installed:
+
+  kubelet: kubelet is service which will run on entire cluster it will make sure that all the containers up and running.
+           It is an agent which runs on every worker node, it connects to docker  and takes care of creating, starting, deleting containers.
+  kube-proxy: It is works at network level which will be forwording network connections.
+              It routes the traffic to appropriate containers based on ip address and port number of the incoming request. In other words we can say it is used for port translation.
+  container Runtime: container Runtime is underlaying software which is used to run our container.
+  Pod: Pod can be defined as a multi-tier or group of containers that are deployed on a single worker node or docker host.
+
+
+  Pods in Kubernetes:
+    -> In Virtualization, basic scheduling unit is virtual machine(vm).
+    -> In Containerrization, basic scheduling unit is Container.
+    -> In kubernetes, what is basic scheduling unit ?
+
+  what is pod ?
+  -> Atomic Unit of scheduling.pods are basic unit of scheduling in kubernetes.
+
+  Pod lifecycle ?
+  -> Define pod configuration inside Manifest file in the YML or JSON format then submite Manifest file at the API server on kubernetes master once that is done.
+  -> It will get scheduling on worker node inside the kubernetes cluster once that is scheduled it goes into the pending state during these pending state node will download all the container images and start running the containers.
+
+########################################################################################################################################
+  pod - config:
+    -> we can define kubernetes objects in two formats which are JSON and YML.YML has clear and most easy to understand than JSON.
+    
+    apiVersion: it defines the version number which this kubernetes object belongs too.
+    metadata: it's consists of two fields 
+              name: name of the object we are creating 
+              labels: tag given to the pod
+
+    spec: define container configuration under spec file.
+
+  pod - create & Display:
+    #nginx-pod.yaml
+    ---
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx-pod
+      labels:
+        app: nginx
+        tier: dev
+    spec:
+      containers:
+      - name: nginx-container
+        image: nginx
+
+
+Types of apiVersion:
+  v1: the kubernetes object is part of first stable release of kubernetes api.So it contains many of the core ojects.
+  apps/v1: it includes functionality related to running apps on kubernetes like Deployments.
+  batch/v1: it contains object related to batch processing and jobs like tasks. 
+
+#kubectl create -f nginx-pod.yaml --> To create new pod using yml file.
+#kubectl get pod --> List of all pods info.
+#kubectl get pod <pod name> --> list of particular pod info.
+#kubectl get pod -o wide --> To find ip address of pod the node which this pod is running we need to print wide output. 
+#kubectl describe pod nginx-pod --> Display all details and events of pod.This cmd vert handy during troubleshooting.
+
+####################################################################################################################################
+
+Replication Controller in Kubernetes:
+  -> Ensure that a specified number of pods running at any time.
+  -> if there are excess pods, they get killed and vice versa.
+  -> New pods are launched when they get fail, get deleted or terminated.
+
+RC and pods are associated with "labels"
+
+Replication Controller - Config:
+  #nginx-rc.yaml
+  apiVersion: v1
+  kind: ReplicationController
+  metadata:
+    name: nginx-rc
+  spec:
+    replicas: 3
+    selector:
+      app: nginx-app
+    template:
+      metadata:
+        name: nginx-pod
+        labels:
+           app: nginx-app
+      spec:
+        containers:
+        - name: nginx-container
+          image: nginx
+          ports:
+            - containerPort: 80
+
+#kubectl create -f nginx-rc.yaml --> To deploy and create rc.
+#kubectl get po -l app=nginx-app --> To filter the tags who's labels are taged with nginx pods.
+#kubectl describe rc nginx-rc --> To display complete details about specific RC.
+
+Replication Controller - Node Fail:
+  #kubectl get po -o wide --> To check which nodes and pods are running inside cluster.
+
+Scaling up:
+   -> Let's assume you notice that there is a sudden increase traffic to the end user accessing your website.
+   #kubectl scale rc nginx-rc --replicas=5 --> To scalup new pods
+   #kubectl get rc nginx-rc
+
+Scaling down:
+    -> once traffic comes down normal we can bring down replicas count to what it was there before.
+    #kubectl scale rc nginx-rc --replicas=3 --> To scal down.
+
+Delete:
+    #kubectl delete -f nginx-rc.yaml --> To delete RC 
+    Note: if you delete RC it will delete all the pods which comes under it's controll.
+    #kubectl get rc
+    #kubectl get po -l app=nginx-app 
+
+##########################################################################
+Deployments in Kubernetes:
+    -> Deployment is a Controller just like any other Controller such as Replication Controller.
+    -> Deployment is all about updates & Rollback, so Deployment Controller provides declarative updates is for pods and Replication Controller.
+
+  Features:
+     Multiple replicas:  
+    -> when you create Deployment by default kubernetes automatically create replicas in the back groud for you.
+    -> In case if you don't menstion replicas in the Deployment Manifest file , Deployment will create replicas set with count of one.
+    -> One pod is runnig always some happens to the this pod and dies it will try to create on same node or diff healthy node.
+    -> we can manage no.of replicas using Deployment. 
+
+    upgrade:
+    -> one of the core feature of Deployment
+
+    Rollback:
+    -> some goes wrong with current upgrade then Deployment controller will allow you to Rollback previous version.
+
+    scal up or down:
+    ->  one you deployed application it will scalup and scaldown based on the load for this all you need to just do the upgrade replicas field and Deployment spec file accordingly.
+
+    Pause and Resume:
+    -> you can Pause the Deployment process inprogress as an when you did.
+
+  Deployment Types:
+    Recreate:
+    -> The Recreate strategy is dummy Deployment which consists of shutting down version A and after making sure version A is turned off then you start Deployment version B during this time there will be down time of the service.
+    
+    RollingUpdate (Ramped or incremental):
+    -> RollingUpdate Deployment will slowly rollout version of App by replacing instances one after the other untill all the instances are sucessfully rollout.
+    -> It's default update strategy in the kubernetes, but it will take some time.
+
+    Canary:
+    -> Canary Deployment gradually shifting production traffic from version A to version B.
+
+    Blue / Green:
+    -> The traffic is switch from version A to version B at the load balancer level advantages this is instance rollout to rollback.
+    -> Blue : version A, Green: version B 
+
+  Deployment - Manifest file:
+    selector: It is used for identifying and managing the pods. 
+
+    #nginx-deploy.yaml
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+      labels:
+        app: nginx-app
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: nginx-app
+      template:
+        metadata: 
+          labels:
+            app: nginx-app
+        spec:
+          containers:
+          - name: nginx-container
+            image: nginx:1.7.9
+            ports:
+            - containerPort: 80
+...
+
+   #kubectl create -f nginx-deploy.yaml --> Create and display
+   #kubectl get deploy -l app=nginx-app --> To see list of replicas.
+   #kubectl get rs -l app=nginx-app --> To check replicas set which the deployment has created.
+   #kubectl get po -l app=nginx-app --> To check list of pods which are created the deployment object.
+   #kubectl describe deploy nginx-deploy --> To describe deploy status.
+   
+   update:
+   #kubectl set image deploy nginx-deploy nginx-container=nginx:1.9.1 --> Update nginx container version.
+   #kubectl rollout status deployment/nginx-deploy --> To check status of deployment.
+   
+   Rollback:
+   #kubectl set image deploy nginx-deploy nginx-container=nginx:1.91 --record--> update wrong version 
+   #kubectl rollout history deployment/nginx-deploy --> To display what commands you have executed
+   #kubectl rollout undo deployment/nginx-deploy --> once find out error we need to rollout by using undo.
+   #kubectl rollout status deployment/nginx-deploy --> To check the rollout status.
+
+   Scalup and Scaldown:
+   #kubectl scale deployment nginx-deploy --replicas=5 --> To scalup pods
+   #kubectl get deploy --> To check list of pod instances.
+   
+   #kubectl scale deployment nginx-deploy --replicas=1 --> to scale down.
+
+   Deployment - delete:
+   #kubectl delete -f nginx-deploy.yaml --> delete deployment (To delete all objects as part of all the manifest file which includs pods,RC,deployments)
+##############################################################################
+
+Services in Kubernetes: 
+   -> Imagine that, you have been asked to deploy web app.Typically the setup consists of front end web app and backend database.
+
+What is service:
+    -> Service is way of grouping of pods that are running on the cluster
+    -> Services provide some important features that are standardize across cluster such as load balancing, service discovery b/w the apps and features to support zero down time for apps deployments.
+
+Types of services:
+   Cluster IP: is reacheable only with in the cluster. some of the use cases are to connect front end pods to back end pods with in the cluster.
+   Node port: There are other set of pods that you need to expose out side world, where you want to expose web app to out side world on the internet.
+   Load balancer: Let's say your fronend app instances distributed across nodes inside your kubernetes cluster 
+
+Load Balancing Service in Kubernetes: 
+   -> once you create service type load balancer it will automatically create the load balancer in the backend and genarate public ip address for you.
+   -> which will use the public address which will forward all the traffic to a service, and you can send httpd,tcp,udp all diff kind of traffic.
+
+  selector: The purpose of selector is to define the way service select the pods that it's need to manage.
+
+  1. we need to create deployment:
+    #nginx-deploy.yaml
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+      labels:
+        app: nginx-app
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: nginx-app
+      template:
+        metadata: 
+          labels:
+            app: nginx-app
+        spec:
+          containers:
+          - name: nginx-container
+            image: nginx:1.7.9
+            ports:
+            - containerPort: 80
+      ... 
+
+  #kubectl create -f nginx-deploy.yaml --> Need to create deployment 
+
+   #service - loadbalancer
+   #nginx-svc-lb.yaml
+  ---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: my-service
+    labels:
+      app: nginx-app
+  spec:
+    selector:
+      app: nginx-app
+    type: LoadBalancer
+    ports:
+    - nodePort: 31000
+      port: 80
+      targetPort: 80
+...
+
+
+  #kubectl create -f nginx-svc-lb.yaml --> Expose the app to outside world for that we need a service
+  #kubectl get service -l app=nginx-app --> To display the service
+  #kubectl describe service my-service --> To print the complete details about the service. 
+  #kubectl describe service my-service |grep Load --> Accessing using LoadBalancer IP.
+  #kubectl delete service my-service --> Deleting LB service (pods will deleted automatically).
+
+
