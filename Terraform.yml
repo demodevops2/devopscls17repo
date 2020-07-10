@@ -1,0 +1,463 @@
+###############################   Terraform  ###################################
+
+Infrastructure: Infrastructure is frame work and it consists of resources to run any application.
+            ->  Infrastructure is composed of physical and virtusal resources that support the flow,storage,processing and analysis of data.
+
+Infrastructure As a code (IAC): Provisioning Infrastructure using scripts/tools instead of manually configuring machines.
+                            ->  Provisioning means Creating,Updating,Deleting.
+                            ->  IAC is about writing code that describe your Infrastructure.
+
+Then what is the Advantage by writing code to describe Infrastructure? :
+-> It allows you to automate the process of Provisioning Infrastructure.
+-> We can also maintain the version history of Infrastructure.
+
+Tools for IAC: 
+              -> Terraform
+              -> AWS CloudFormation
+              -> Azure Resource Manager
+              -> Google Cloud Deployment Manager etc..
+
+What is Terraform:
+-> Terraform is an Infrastructure As code software by HashiCorp.
+-> Terraform enables you to create,change,improve and versioning Infrastructure safely and efficiently.
+-> Terraform is the first multi-cloud Infrastructure As a code tool and it is written in Go Language.
+-> Terraform provides such as AWS,GCP,Azure,OpenStack,VMware and more.
+
+Installing Terraform on Linux: 
+-> To install Terraform, find the appropriate package for your system and download it.
+-> Terraform is packaged as a zip archive, So, after downloading Terraform, unzip the package.
+-> Terraform runs as a single binary named terraform.
+-> The final step is to make sure that the terraform binary is available on the PATH.
+-> Finally verify the version:
+         -> terraform
+         -> terraform --version
+         #export PATH=${PATH}:/root/awsdata
+         #vim .bashrc
+         -> export PATH=${PATH}:/root/awsdata
+
+Terraform Configuration file:
+  -> If you want to create Infrastructure with help of terraform you need to write some files for your terraform those files are called terraform Configuration files.
+  -> Terraform uses some files to describe Infrastructure As a code.
+
+Terraform Setup with AWS:
+-> Terraform support many cloud providers.
+-> So terraform has plugins for each provider and we need to download it before going to work with any cloud with terraform. 
+-> you no need to download and install plugins manually terraform will takecare.
+
+-> first we need to create .tf configuration file and pass the provider information.
+-> Now run terraform init command and observe the output. This command download the plugin for required provider which we mention terraform file.
+
+#provider.tf
+provider "aws" {
+  region = "eu-west-1"
+
+}
+
+AWS IAM User creation to work with terrafrom for IAC:
+-> create IAM user and assign required permissions for user to manager IAC scripts using terraform.
+
+Simple project creation with terraform:
+-> Create main.tf file to declare your required services from AWS cloud for your project setup.
+   #terrform fmt --> re-arranged properly 
+   #terrform plan --> It won't create any infrasture , it will show what actually it is going to create.
+   #terraform apply --> To create resouces 
+   #terraform destroy --> existing infra.
+
+   #main.tf
+   resource "aws_instance" "web01" {
+  ami           = "ami-03ef731cc103c9f09"
+  instance_type = "t2.micro"
+  security_groups = ["${aws_security_group.allow_ssh.name}"]
+
+  tags={
+    Name = "Ec2 instance created by terrform"
+  }
+}
+
+resource "aws_security_group" "allow_ssh" {
+  name        = "allow_ssh"
+  description = "Allow ssh traffic"
+
+
+  ingress {
+
+    from_port   = 22 #  By default, the linux server listens on TCP port 22 for ssh
+    to_port     = 22
+    protocol =   "tcp"
+
+    cidr_blocks =  ["0.0.0.0/0"]
+  }
+}
+
+
+Terraform state file:
+-> Terraform records information about what infrastructure it created in a Terraform state file.
+-> This file contains a custom JSON format that records a mapping from the Terraform resources in your templates to the representation of those resources in the real world.
+
+State - terraform.tfstate: 
+-> Terraform must store state about our managed infrastructure and configuration.
+-> This state is used by Terraform to map real world resources to our configuration, keep track of metadata, and to improve performance for large infrastructures.
+
+
+We can break these blocks into multiple files:
+#provider.tf
+provider "aws" {
+  region = "eu-west-1"
+
+}
+
+Then let's put ec2 resource in a ec2.tf file:
+#ec2.tf
+resource "aws_instance" "web01" {
+  ami           = "ami-03ef731cc103c9f09"
+  instance_type = "t2.micro"
+  security_groups = ["${aws_security_group.allow_ssh.name}"]
+
+  tags={
+    Name = "Ec2 instance created by terrform"
+  }
+}
+
+
+And finally, the security group in a seperate file sg.tf:
+
+#sg.tf
+resource "aws_security_group" "allow_ssh" {
+  name        = "allow_ssh"
+  description = "Allow ssh traffic"
+
+
+  ingress {
+
+    from_port   = 22 #  By default, the linux server listens on TCP port 22 for ssh
+    to_port     = 22
+    protocol =   "tcp"
+
+    cidr_blocks =  ["0.0.0.0/0"]
+  }
+}
+
+-> When you call this command in the working directory with these 3 .tf files #terraform apply
+
+terraform-variables:
+ #instance.tf
+ resource "aws_instance" "example" {
+  ami           = "ami-0c64dd618a49aeee8"
+  instance_type = var.ec2_type
+  count = var.instance_count
+
+tags = {
+    Name = "Terraform_demo"
+  }
+}
+
+#variables.tf
+variable "instance_count" {
+  # default = 2
+}
+
+variable "ec2_type" {
+  # default = "t2.micro"
+}
+
+#######################################
+ interpolation: we can get some dynamic values , "${}" --> we can access the values of other resouces and we can also access the variables.
+            -> "${<Type of resouce>.<logicalname>.id}" --> so this particular interpolation get the id of particular resouces.
+            -> atrribute is "id"
+
+
+Terraform variables:
+
+#vpc.tf
+resource "aws_vpc" "TF_vpc" {
+  cidr_block       = "${var.vpc_cidr}"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "TF_vpc"
+    Location = "HYD"
+  }
+}
+
+resource "aws_subnet" "subnet_1" {
+  vpc_id     = "${aws_vpc.TF_vpc.id}"
+  cidr_block = "${var.subnet_cidr}"
+
+  tags = {
+    Name = "TF_vpc"
+  }
+}
+
+
+#vars.tf          
+variable "region" {
+ # type    = "string"
+  default = "eu-west-1"
+}
+
+
+variable "vpc_cidr" {
+  default = "10.0.0.0/16"
+}
+
+
+variable "subnet_cidr" {
+  default = "10.0.0.0/24"
+}
+
+Terraform loops: 
+  -> Using loops we can create multiple resources dynamically
+###########  create multiple subnets dynamically ############
+
+#vars.tf
+variable "region" {
+ # type    = "string"
+  default = "ap-south-1"
+}
+
+variable "vpc_cidr" {
+  default = "10.0.0.0/16"
+}
+
+variable "subnet_cidr" {
+  type = "list"
+  default = ["10.0.0.0/24","10.0.1.0/24","10.0.2.0/24"]
+}
+
+variable "azs" {
+  type    = "list"
+  default = ["ap-south-1a","ap-south-1b","ap-south-1c"]
+}
+
+#vpc.tf
+resource "aws_vpc" "TF_vpc" {
+  cidr_block       = "${var.vpc_cidr}"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "TF_vpc"
+    Location = "HYD"
+  }
+}
+
+resource "aws_subnet" "subnets" {
+  count = "${length(var.azs)}"
+  vpc_id     = "${aws_vpc.TF_vpc.id}"
+  cidr_block = "${element(var.subnet_cidr,count.index)}"
+
+  tags = {
+    Name = "subnet-${count.index+1}"
+  }
+}
+
+Terraform Data Sources:
+  -> Terraform provide different Data Sources using which we can get sudden information dynamically based on region in which we are Provisioning our infrastructure.
+
+ #vpc.tf
+resource "aws_vpc" "TF_vpc" {
+  cidr_block       = "${var.vpc_cidr}"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "TF_vpc"
+    Location = "HYD"
+  }
+}
+
+resource "aws_subnet" "subnets" {
+  count = "${length(data.aws_availability_zones.azs.names)}"
+  vpc_id     = "${aws_vpc.TF_vpc.id}"
+  cidr_block = "${element(var.subnet_cidr,count.index)}"
+
+  tags = {
+    Name = "subnet-${count.index+1}"
+  }
+}
+
+# vars.tf
+variable "region" {
+ # type    = "string"
+  default = "eu-west-1"
+}
+
+variable "vpc_cidr" {
+  default = "10.0.0.0/16"
+}
+
+variable "subnet_cidr" {
+  type = "list"
+  default = ["10.0.0.0/24","10.0.1.0/24","10.0.2.0/24"]
+}
+
+#variable "azs" {
+#  type    = "list"
+#  default = ["eu-west-1a","eu-west-1b","eu-west-1c"]
+#}
+
+# Declare the data source
+data "aws_availability_zones" "azs" {
+#  state = "available"
+}
+
+#####
+availability_zone = "${element(data.aws_availability_zones.azs.names,count.index)}"
+
+
+Terraform Map And Lookup function:
+  -> By using Lookup function we can get a value by passing a key.
+
+#provider.tf
+provider "aws" {
+  region = "eu-west-1"
+
+}
+
+
+# vars.tf
+variable "region" {
+ # type    = "string"
+  default = "eu-west-1"
+}
+
+# vars.tf
+variable "ec2_ami" {
+ type = "map"
+ default = {
+    us-east-1 = "image-1234"
+    us-west-2 = "image-4567"
+  }
+}
+
+#ec2.tf
+resource "aws_instance" "web" {
+  ami           = "${lookup(var.ec2_ami,var.region)}"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "HelloWorld"
+  }
+}
+
+#######################################################################
+Terraform modules:
+  -> count: works like a loop, for example, if the count is two it create two ec2 instances.
+
+Modules helps in managing the code in more reusable. Typically module is a folder which containing set of related TF files.
+
+
+#/root/terraform-app
+--> 
+├── dev
+│   ├── main.tf
+│   ├── provider.tf
+│   ├── terraform.tfstate
+│   └── terraform.tfstate.backup
+├── modules
+│   ├── ec2
+│   │   ├── instance.tf
+│   │   └── vars.tf
+│   └── vpc
+│       ├── networking.tf
+│       └── vars.tf
+└── prod
+
+#/root/terraform-app/modules/vpc/
+-->
+#networking.tf
+resource "aws_vpc" "TF_vpc" {
+  cidr_block       = "${var.vpc_cidr}"
+  instance_tenancy = "${var.tenancy}"
+
+  tags = {
+    Name = "TF_vpc"
+    Location = "HYD"
+  }
+}
+
+resource "aws_subnet" "subnet_1" {
+  vpc_id     = "${var.vpc_id }"
+  cidr_block = "${var.subnet_cidr}"
+
+  tags = {
+    Name = "TF_vpc"
+  }
+}
+
+output "vpc_id" {
+   value = "${aws_vpc.TF_vpc.id}"
+}
+
+output "subnet_id" {
+   value = "${aws_subnet.subnet_1.id}"
+}
+
+#vars.tf
+variable "vpc_cidr" {
+       default = "10.0.0.0/16"
+}
+
+
+variable "tenancy" {
+       default = "dedicated"
+}
+
+variable "vpc_id" {}
+
+variable "subnet_cidr" {
+       default = "10.0.1.0/24"
+}
+
+#/root/terraform-app/modules/ec2 
+-->
+#instance.tf
+resource "aws_instance" "web" {
+  count         = "${var.ec2_count}"
+  ami           = "${var.ami_id}"
+  instance_type = "${var.instance_type}"
+  subnet_id     = "${var.subnet_id}"
+  tags = {
+    Name = "HelloWorld"
+  }
+}
+
+#vars.tf
+variable "ec2_count" {
+  default = "1"
+}
+
+variable "ami_id" {}
+
+variable "instance_type" {
+  default = "t2.micro"
+}
+
+variable "subnet_id" {}
+
+#/root/terraform-app/dev
+-->
+#main.tf
+module "my_vpc" {
+  source      = "../modules/vpc"
+  vpc_cidr    = "192.168.0.0/16"
+  tenancy     = "default"
+  vpc_id      = "${module.my_vpc.vpc_id}"
+  subnet_cidr = "192.168.1.0/24"
+
+}
+
+module "my_ec2" {
+  source        = "../modules/ec2"
+  ec2_count     = 1
+  instance_type = "t2.micro"
+  ami_id        = "ami-01f14919ba412de34"
+  subnet_id     = "${module.my_vpc.subnet_id}"
+}
+
+#provider.tf
+provider "aws" {
+  region = "eu-west-1"
+
+}
+
+#######################################################################
+
